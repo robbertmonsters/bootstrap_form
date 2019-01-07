@@ -201,8 +201,9 @@ module BootstrapForm
       options[:class] << " #{error_class}" if has_error?(name)
       options[:class] << " #{feedback_class}" if options[:icon]
 
-      content_tag(:div, options.except(:id, :label, :help, :icon, :label_col, :control_col, :layout)) do
+      content_tag(:div, options.except(:id, :label, :help, :icon, :label_col, :control_col, :layout, :help_tooltip)) do
         label = generate_label(options[:id], name, options[:label], options[:label_col], options[:layout]) if options[:label]
+        tooltip_help = generate_help_tooltip(options[:help_tooltip])
         control = capture(&block).to_s
         control.concat(generate_help(name, options[:help]).to_s)
         control.concat(generate_icon(options[:icon])) if options[:icon]
@@ -215,7 +216,7 @@ module BootstrapForm
           end
           control = content_tag(:div, control, class: control_class)
         end
-
+        concat(label).concat(tooltip_help).concat(control)
         concat(label).concat(control)
       end
     end
@@ -395,6 +396,23 @@ module BootstrapForm
       help_text ||= get_help_text_by_i18n_key(name)
 
       content_tag(:span, help_text, class: 'help-block') if help_text.present?
+    end
+
+    def generate_help_tooltip(options)
+      if options && options[:icon].present?
+        toggle = options[:toggle] || 'popover'
+        title = options[:title] || ''
+        tooltip_content = options[:content] || ''
+        placement = options[:placement] || 'right'
+        container = options[:container] || 'body'
+        trigger = options[:trigger] || 'click'
+
+         content_tag(:a, '', title: title, role: 'button', class: 'rails-bootstrap-forms-tooltip-button', data: { toggle: toggle, content: tooltip_content, placement: placement, container: container, trigger: trigger }) do
+          concat(content_tag(:span, '', class: options[:icon]))
+        end
+      else
+        ''
+      end
     end
 
     def generate_icon(icon)
