@@ -114,7 +114,7 @@ module BootstrapForm
 
     def check_box_with_bootstrap(name, options = {}, checked_value = "1", unchecked_value = "0", &block)
       options = options.symbolize_keys!
-      check_box_options = options.except(:label, :label_class, :help, :inline)
+      check_box_options = options.except(:label, :label_class, :help, :help_position, :inline)
 
       html = check_box_without_bootstrap(name, check_box_options, checked_value, unchecked_value)
       label_content = block_given? ? capture(&block) : options[:label]
@@ -201,11 +201,11 @@ module BootstrapForm
       options[:class] << " #{error_class}" if has_error?(name)
       options[:class] << " #{feedback_class}" if options[:icon]
 
-      content_tag(:div, options.except(:id, :label, :help, :icon, :label_col, :control_col, :layout, :help_tooltip)) do
+      content_tag(:div, options.except(:id, :label, :help, :icon, :label_col, :help_position, :control_col, :layout, :help_tooltip)) do
         label = generate_label(options[:id], name, options[:label], options[:label_col], options[:layout]) if options[:label]
         tooltip_help = generate_help_tooltip(options[:help_tooltip])
         control = capture(&block).to_s
-        control.concat(generate_help(name, options[:help]).to_s)
+        control.concat(generate_help(name, options[:help]).to_s) unless options[:help_position] == 'top'
         control.concat(generate_icon(options[:icon])) if options[:icon]
 
         if get_group_layout(options[:layout]) == :horizontal
@@ -216,7 +216,11 @@ module BootstrapForm
           end
           control = content_tag(:div, control, class: control_class)
         end
-        concat(label).concat(control)
+        if options[:help_position] == 'top'
+          concat(label).concat(tooltip_help).concat(generate_help(name, options[:help], options[:help_position]).to_s).concat(control)
+        else
+          concat(label).concat(tooltip_help).concat(control)
+        end
       end
     end
 
@@ -319,6 +323,7 @@ module BootstrapForm
       wrapper_class = css_options.delete(:wrapper_class)
       wrapper_options = css_options.delete(:wrapper)
       help = options.delete(:help)
+      help_position = options.delete(:help_position)
       icon = options.delete(:icon)
       label_col = options.delete(:label_col)
       control_col = options.delete(:control_col)
@@ -326,6 +331,7 @@ module BootstrapForm
       form_group_options = {
         id: options[:id],
         help: help,
+        help_position: help_position,
         icon: icon,
         label_col: label_col,
         control_col: control_col,
@@ -388,13 +394,15 @@ module BootstrapForm
 
     end
 
-    def generate_help(name, help_text)
+    def generate_help(name, help_text, help_position = nil)
       help_text = get_error_messages(name) if has_error?(name) && inline_errors
+      class_name = 'help-block'
+      class_name = "help-block-#{help_position}" if help_position
       return if help_text === false
 
       help_text ||= get_help_text_by_i18n_key(name)
 
-      content_tag(:span, help_text, class: 'help-block') if help_text.present?
+      content_tag(:span, help_text, class: class_name) if help_text.present?
     end
 
     def generate_help_tooltip(options)
