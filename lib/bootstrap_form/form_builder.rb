@@ -216,7 +216,6 @@ module BootstrapForm
           end
           control = content_tag(:div, control, class: control_class)
         end
-        concat(label).concat(tooltip_help).concat(control)
         concat(label).concat(control)
       end
     end
